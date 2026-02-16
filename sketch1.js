@@ -1,5 +1,5 @@
 let w = 1920;
-let h = 1280;
+let h = 1080;
 let N = 40;
 let positives = [1,-1,-1,1,1,-1,1,1]
 let radii = [];
@@ -7,7 +7,7 @@ let radii = [];
 let c1Rands = [];
 let c2Rands = [];
 
-let pageNum = 3;
+let pageNum = 0;
 let totalPageNums = 3;
 let heightScale = 1.8;
 let answers;
@@ -41,8 +41,10 @@ let shrink_time = 0;
 let shrink_time_max = 10000;
 
 let endPageTimer = 0;
-let timerChunk = 10;
+let timerChunk = 60;
 let timerN = 4;
+
+let nextButtonH = h-100;
 
 
 function preload() {
@@ -74,9 +76,9 @@ function setup() {
 }
 
 function resetAnswer(){
-  answers = [[],[[[0,0,0,0],[0,0,0,0]],[[""],true]],
-                [[[""],true]],
-                [[[0,0],[0,0]],[[""],true]]
+  answers = [[],[[[0,0,0,0],[0,0,0,0]],[[""],false]],
+                [[[""],false]],
+                [[[0,0],[0,0]],[[""],false]]
               ];
 }
 
@@ -152,7 +154,7 @@ function pageNumbers(){
   if(pageNum>0&&pageNum<totalPageNums+1){
       stroke(255);
       fill(0);
-      showText("page "+str(pageNum)+"/"+str(totalPageNums),w/2,testH);
+      showText("page "+str(pageNum)+"/"+str(totalPageNums),w/2,nextButtonH+15);
   
 
   }
@@ -300,65 +302,66 @@ function homeScreen(){
 
 
 
-
-
-function page1(){
-  
-  showText("how many guild meetings have you attended?",w/2,100,"question");
-  let optionsText = ["1","2","3","4+"];
-  let optionsX = w/2;
-  let optionsY = 200;
-  
-
-  optionSelect(optionsX,optionsY,optionsText,0,false);
-  
-  showText("what's your favourite thing about the guild?",w/2,330,"question");
-  inputTextBox(w/2,520,w/2,280,1);
-
-  let backButton = button("back",w/4,h-200);
-  if(backButton){
-    pageNum--;
+function nextAndBackButtons(back,next,){
+  if(back){
+    let backButton = button("back",w/4,nextButtonH);
+    if(backButton){
+      pageNum--;
+    }
   }
-
-  let nextButton = button("next",3*w/4,h-200);
+  let nextText;
+  if(next){
+    nextText = "next";
+  }else{
+    nextText = "finish";
+  }
+  let nextButton = button(nextText,3*w/4,nextButtonH);
   if(nextButton){
+    if(pageNum == 3){
+      endPageTimer = timerN*timerChunk
+    }
     pageNum++;
   }
+
+
+}
+
+function page1(){  
+  showText("how many guild meetings have you attended?",w/2,200,"question");
+  let optionsText = ["1","2","3","4+"];
+
+  optionSelect(w/2,300,optionsText,0,false);
+  
+  showText("what's your favourite thing about the guild?",w/2,480,"question");
+  inputTextBox(w/2,670,w/2,280,1);
+
+  nextAndBackButtons(true,true);
 
 }
 
 function page2(){
-  showText("is there anything you think we could improve?",w/2,200,"question")
-  inputTextBox(w/2,390,w/2,280,0);
+  showText("is there anything you think we could improve?",w/2,350,"question")
+  inputTextBox(w/2,540,w/2,280,0);
 
-  let nextButton = button("next",3*w/4,h-200);
-  if(nextButton){
-    pageNum++;
-  }
-
-
-  let backButton = button("back",w/4,h-200);
-  if(backButton){
-    pageNum--;
-  }
+  nextAndBackButtons(true,true);
 
 }
 
 
 function page3(){
 
-  showText("which of the following would you be interested in attending?",w/2,100,"question");
+  showText("which of the following would you be interested in attending?",w/2,200,"question");
 
   let optionsText = ["workshops", "writing development group"];
 
-  optionSelect(w/2,200,optionsText,0,true);
+  optionSelect(w/2,300,optionsText,0,true);
 
-  showText("are there any other types of events you would",w/2,400,"question");
-  showText("like to see from us?",w/2,440,"question");
+  showText("are there any other types of events you would",w/2,480,"question");
+  showText("like to see from us?",w/2,520,"question");
 
   
 
-  inputTextBox(w/2,540,w/2,100,1);
+  inputTextBox(w/2,710,w/2,280,1);
 
   // if(typeof(textInputReturn)=='boolean'){
   //   answers[pageNum][0][1] = textInputReturn;
@@ -366,18 +369,7 @@ function page3(){
   //   answers[pageNum][0][0] = answers[pageNum][0][0] + textInputReturn;
   // }
 
-  let nextButton = button("next",3*w/4,h-200);
-  if(nextButton){
-    pageNum++;
-    endPageTimer = timerN*timerChunk;
-  }
-
-  
-
-  let backButton = button("back",w/4,h-200);
-  if(backButton){
-    pageNum--;
-  }
+  nextAndBackButtons(true,false);
 
 }
 
@@ -395,6 +387,7 @@ function page4(){
     resetAnswer();
     pageNum = 0;
   } 
+  console.log(endPageTimer);
 }
 
 function saveAnswer(){
@@ -554,7 +547,6 @@ function inputTextBox(boxX,boxY,boxW,boxH,questionNum){
     answers[pageNum][questionNum][1] = true;
     //return true;
   }else if(!hoverOver(boxX,boxY,boxW,boxH,"text box") && mouseIsPressed){
-    
     answers[pageNum][questionNum][1] = false;
   }else if(selected){
     drawCursor(boxX,boxY,boxW,boxH,words,boxTextSize,boxLineHeight);
@@ -675,22 +667,30 @@ function mouseReleased(){
 function keyPressed(){
   //if(pageNum == 1){
   console.log(key);
-    let line = answers[pageNum][questionNumGlobal][0][answers[pageNum][questionNumGlobal][0].length-1];
-    console.log(line);
-    if(answers[pageNum][questionNumGlobal][1] && key.length==1){
-      answers[pageNum][questionNumGlobal][0][answers[pageNum][questionNumGlobal][0].length-1] = line + key;
-    }else if(key=="Backspace"){
-      if(line == "" && answers[pageNum][questionNumGlobal][0].length>1){
-        answers[pageNum][questionNumGlobal][0].pop();
-      }else{
-        answers[pageNum][questionNumGlobal][0][answers[pageNum][questionNumGlobal][0].length-1] = line.substring(0,line.length-1);
-      }
-      
-    }else if(key=="Enter"){
-      newLine(line,answers[pageNum][questionNumGlobal][0],0);
-    }else if(key == "Tab"){
-      fullscreen(true);
+  let line;
+  console.log(answers)//[pageNum][questionNumGlobal][0]);
+  console.log(answers[pageNum][questionNumGlobal])//[0]);
+  if(answers[pageNum][questionNumGlobal][0].length>0){
+    line = answers[pageNum][questionNumGlobal][0][answers[pageNum][questionNumGlobal][0].length-1];
+  }else{
+    line = "";
+  }
+  
+  console.log(line);
+  if(answers[pageNum][questionNumGlobal][1] && key.length==1){
+    answers[pageNum][questionNumGlobal][0][answers[pageNum][questionNumGlobal][0].length-1] = line + key;
+  }else if(key=="Backspace"){
+    if(line == "" && answers[pageNum][questionNumGlobal][0].length>1){
+      answers[pageNum][questionNumGlobal][0].pop();
+    }else{
+      answers[pageNum][questionNumGlobal][0][answers[pageNum][questionNumGlobal][0].length-1] = line.substring(0,line.length-1);
     }
+    
+  }else if(key=="Enter"){
+    newLine(line,answers[pageNum][questionNumGlobal][0],0);
+  }else if(key == "Tab"){
+    fullscreen(true);
+  }
 //   }else if(pageNum == 2){
 //     let line = answers[1][0][0][answers[1][0][0].length-1];
 //     if(answers[1][0][1] && key.length==1){
