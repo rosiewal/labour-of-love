@@ -56,6 +56,9 @@ function setup() {
   console.log(displayWidth);
   console.log(displayHeight);
 
+  console.log(w);
+  console.log(h);
+
   background(255);
   angleRandMax = PI/2;
 
