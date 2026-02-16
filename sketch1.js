@@ -1,5 +1,5 @@
 let w = 1920;
-let h = 910;
+let h = 1280;
 let N = 40;
 let positives = [1,-1,-1,1,1,-1,1,1]
 let radii = [];
