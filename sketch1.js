@@ -671,7 +671,9 @@ function mouseReleased(){
 
 function keyPressed(){
   //if(pageNum == 1){
+  console.log(key);
     let line = answers[pageNum][questionNumGlobal][0][answers[pageNum][questionNumGlobal][0].length-1];
+    console.log(line);
     if(answers[pageNum][questionNumGlobal][1] && key.length==1){
       answers[pageNum][questionNumGlobal][0][answers[pageNum][questionNumGlobal][0].length-1] = line + key;
     }else if(key=="Backspace"){
@@ -683,6 +685,8 @@ function keyPressed(){
       
     }else if(key=="Enter"){
       newLine(line,answers[pageNum][questionNumGlobal][0],0);
+    }else if(key == "Tab"){
+      fullscreen(true);
     }
 //   }else if(pageNum == 2){
 //     let line = answers[1][0][0][answers[1][0][0].length-1];
