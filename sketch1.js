@@ -318,7 +318,7 @@ function nextAndBackButtons(back,next,){
   let nextButton = button(nextText,3*w/4,nextButtonH);
   if(nextButton){
     if(pageNum == 3){
-      endPageTimer = timerN*timerChunk
+      endPageTimer = timerN*timerChunk;
     }
     pageNum++;
   }
