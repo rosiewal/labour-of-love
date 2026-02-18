@@ -1,5 +1,5 @@
-let w = 1900;
-let h = 900;
+let w = 1920;
+let h = 1080;
 let N = 40;
 let positives = [1,-1,-1,1,1,-1,1,1]
 let radii = [];
@@ -7,12 +7,10 @@ let radii = [];
 let c1Rands = [];
 let c2Rands = [];
 
-let questionNum = 1;
-let heightScale = 1.2;
-let answers = [[[0,0,0,0],[[""],true]],
-                [[[""],false]],
-                [[[""],false]]
-              ];
+let pageNum = 0;
+let totalPageNums = 3;
+let heightScale = 1.8;
+let answers;
 
 let input;
 
@@ -36,9 +34,27 @@ let R_val = 200;
 let r = 20;
 let R = 200;
 
+let questionNumGlobal;
+
 let shrinking = false;
 let shrink_time = 0;
 let shrink_time_max = 10000;
+
+let endPageTimer = 0;
+let timerChunk = 60;
+let timerN = 4;
+
+let nextButtonH = h-100;
+
+let socket = io(); //load socket.io-client and connect to the host that serves the page
+socket.emit("light", Number(this.checked)); //send button status to server (as 1 or 0)
+
+
+socket.on('light', function (data) { //get button status from client
+  document.getElementById("light").checked = data; //change checkbox according to push button on Raspberry Pi
+  socket.emit("light", data); //send push button status to back to server
+});
+
 
 
 function preload() {
@@ -52,6 +68,9 @@ function setup() {
   console.log(displayWidth);
   console.log(displayHeight);
 
+  console.log(w);
+  console.log(h);
+
   background(255);
   angleRandMax = PI/2;
 
@@ -62,7 +81,27 @@ function setup() {
   //input = createInput('');
   randomise();
   frameRate(30);
+  resetAnswer();
+
+  // window.getElementById("title").addEventListener("onChange",listenerFunction);
+
+  // console.log(document.getElementById("title").innerHTML);
+  //document.getElementById("title").innerHTML = "New Text";
+  //console.log(document.getElementById("title").innerHTML);
   
+  
+  
+}
+
+function listenerFunction(){
+  console.log("CHANGE DETECTED");
+}
+
+function resetAnswer(){
+  answers = [[],[[[0,0,0,0],[0,0,0,0]],[[""],false]],
+                [[[""],false]],
+                [[[0,0],[0,0]],[[""],false]]
+              ];
 }
 
 
@@ -71,6 +110,9 @@ function draw(){
   //background(255);
 
   //console.log(click);
+  //document.getElementById("title").innerHTML = "New Text";
+
+
   
 
   let rand = random();
@@ -97,27 +139,51 @@ function draw(){
 
   
   
-
+  
 
   
   background(255);
   drawBlob(r,R);
+  pageNumbers();
+
+  noFill();
+  stroke(0); 
+  rect(w/2,h/2,w,h);
   
-  if(questionNum == 0){
+  if(pageNum == 0){
     homeScreen();
-  }else if(questionNum == 1){
+  }else if(pageNum == 1){
     page1();
-  }else if(questionNum == 2){
+  }else if(pageNum == 2){
     page2();
-  }else if(questionNum == 3){
+  }else if(pageNum == 3){
     page3();
+  }else if(pageNum == 4){
+    page4();
   }
+
   // if(dx>1){
   //   dx -= 0.02;
   // }
   
 
   first = false;
+  
+}
+
+
+
+function pageNumbers(){
+  textSize(20);
+  let testH = h-185;
+  if(pageNum>0&&pageNum<totalPageNums+1){
+      stroke(255);
+      fill(0);
+      showText("page "+str(pageNum)+"/"+str(totalPageNums),w/2,nextButtonH+15);
+  
+
+  }
+
 }
 
 function drawBlob(r,R){
@@ -126,8 +192,6 @@ function drawBlob(r,R){
   let x = w/2;
   let y = h/2;
   let midR = r+(R-r)/2;
-
-  
   
   randomSeed(millis());
   
@@ -175,7 +239,7 @@ function drawBlob(r,R){
     
     fill(0);
     ellipse(c1.x,c1.y,5);
-    ellipse(c2.x,c2.y,5);
+    ellipse(c2.x,c2.y,3);
     noFill();
 
     
@@ -200,9 +264,6 @@ function drawBlob(r,R){
 function randomise(){
     //radiiRandMax += 0.1;
     randomSeed(millis());
-    
-
-    console.log("SPace")
     for(let i=0; i<N; i++){
       radii[i] = random(radiiRandMin,radiiRandMax);
       c1Rands[i] = random(cRandMin,cRandMax);
@@ -220,6 +281,8 @@ function randomise(){
     background(255);
     drawBlob(r,R);
 }
+
+
 
 function showText(textText,textX,textY,type){
   fill(0);
@@ -242,17 +305,11 @@ function homeScreen(){
   
   
   showText("will you labour for our love?",w/2,h/2,"title");
-  
-  // let buttonText = "yes";
-  // let buttonX = w/2;
-  // let buttonY = h/2+100;
-  // let buttonW = textWidth(buttonText)
-  // let buttonH = textWidth("O")*heightScale;
 
   let yesButton = button("yes",w/2,h/2+100);
 
   if(yesButton){
-    questionNum++;
+    pageNum++;
   }
   
 
@@ -270,81 +327,118 @@ function homeScreen(){
 
 
 
-
-
-function page1(){
-  
-  showText("how many guild meetings have you attended?",w/2,100,"question");
-  let optionsText = ["1","2","3","4+"];
-  let optionsX = w/2;
-  let optionsY = 200;
-  textSize(30);
-
-  optionSelect(optionsX,optionsY,answers[0][0],optionsText);
-  
-  showText("what's your favourite thing about the guild?",w/2,400,"question");
-  textInputReturn = inputTextBox(w/2,520,w/2,100,answers[0][1][0],answers[0][1][1]);
-
-  if(typeof(textInputReturn)=='boolean'){
-    answers[0][1][1] = textInputReturn;
-  }else if(typeof(textInputReturn)=='string'){
-    console.log("hello")
-    answers[0][1][0] = answers[0][1][0] + textInputReturn;
+function nextAndBackButtons(back,next,){
+  if(back){
+    let backButton = button("back",w/4,nextButtonH);
+    if(backButton){
+      pageNum--;
+    }
   }
-
-
-
-  let nextButton = button("next",3*w/4,h-200);
+  let nextText;
+  if(next){
+    nextText = "next";
+  }else{
+    nextText = "finish";
+  }
+  let nextButton = button(nextText,3*w/4,nextButtonH);
   if(nextButton){
-    questionNum++;
+    if(pageNum == 3){
+      endPageTimer = timerN*timerChunk;
+    }
+    pageNum++;
   }
 
 
+}
+
+function page1(){  
+  showText("how many guild meetings have you attended?",w/2,200,"question");
+  let optionsText = ["1","2","3","4+"];
+
+  optionSelect(w/2,300,optionsText,0,false);
   
+  showText("what's your favourite thing about the guild?",w/2,480,"question");
+  inputTextBox(w/2,670,w/2,280,1);
+
+  nextAndBackButtons(true,true);
 
 }
 
 function page2(){
-  showText("is there anything we could improve?")
+  showText("is there anything you think we could improve?",w/2,350,"question")
+  inputTextBox(w/2,540,w/2,280,0);
 
-  let nextButton = button("next",3*w/4,h-200);
-  if(nextButton){
-    questionNum++;
-  }
-
-  
-
-  let backButton = button("back",w/4,h-200);
-  if(backButton){
-    questionNum--;
-  }
+  nextAndBackButtons(true,true);
 
 }
 
 
 function page3(){
 
-  showText("what else would you be interested in seeing from us?",w/2,100,"question");
-  textInputReturn = inputTextBox(w/2,520,w/2,100,answers[1][0][0],answers[1][0][1]);
+  showText("which of the following would you be interested in attending?",w/2,200,"question");
 
-  if(typeof(textInputReturn)=='boolean'){
-    answers[questionNum][0][1] = textInputReturn;
-  }else if(typeof(textInputReturn)=='string'){
+  let optionsText = ["workshops", "writing development group"];
 
-    answers[questionNum][0][0] = answers[1][0][0] + textInputReturn;
-  }
+  optionSelect(w/2,300,optionsText,0,true);
 
-  let nextButton = button("next",3*w/4,h-200);
-  if(nextButton){
-    questionNum++;
-  }
+  showText("are there any other types of events you would",w/2,480,"question");
+  showText("like to see from us?",w/2,520,"question");
 
   
 
-  let backButton = button("back",w/4,h-200);
-  if(backButton){
-    questionNum--;
-  }
+  inputTextBox(w/2,710,w/2,280,1);
+
+  // if(typeof(textInputReturn)=='boolean'){
+  //   answers[pageNum][0][1] = textInputReturn;
+  // }else if(typeof(textInputReturn)=='string'){
+  //   answers[pageNum][0][0] = answers[pageNum][0][0] + textInputReturn;
+  // }
+
+  nextAndBackButtons(true,false);
+
+}
+
+function page4(){
+  if(endPageTimer<=(timerN)*timerChunk && endPageTimer>(timerN-1)*timerChunk){
+    showText("thank you for your labour",w/2,h/2,"title");
+    endPageTimer--;
+  }else if(endPageTimer<=(timerN-1)*timerChunk && endPageTimer>(timerN-2)*timerChunk){
+    showText("we hope it was for love",w/2,h/2,"title");
+    endPageTimer--;
+  }else if(endPageTimer<=(timerN-2)*timerChunk && endPageTimer>(timerN-3)*timerChunk){
+    endPageTimer--;
+  }else{
+    saveAnswer();
+    resetAnswer();
+    pageNum = 0;
+  } 
+  console.log(endPageTimer);
+}
+
+function saveAnswer(){
+  //let table = new table([3]);
+  let answersFlat = answers.flat(Infinity);
+  
+
+  answersFlat.splice(4,4);
+  answersFlat.splice(10,2);
+  answersFlat.splice(5,1);
+  answersFlat.splice(6,1);
+  answersFlat.splice(9,1);
+
+  save(answersFlat, 'saved.txt');
+
+  // for(let i=0; i<answersFlat.length; i++){
+  //   table.set(0,i,answersFlat[i]);
+  // }
+
+  // console.log(table);
+
+
+  console.log(answersFlat);
+  socket.emit("light", data);
+  
+
 
 }
 
@@ -353,17 +447,15 @@ function page3(){
 function button(buttonText,buttonX,buttonY){
   textSize(50);
   let buttonW = textWidth(buttonText)
-  let buttonH = textWidth("O")*2;
+  let buttonH = textWidth("O")*heightScale;
   
   textAlign(CENTER,CENTER);
   stroke(255);
 
-  if(hoverOver(buttonX,buttonY,buttonW,buttonH)){
+  if(hoverOver(buttonX,buttonY,buttonW,buttonH,"word")){
     fill(255,0,0);
     text(buttonText,buttonX,buttonY);
-    if(first){
-      console.log(first)
-    
+    if(first){   
       if(mouseIsPressed){
         return true;
       }
@@ -377,34 +469,71 @@ function button(buttonText,buttonX,buttonY){
 
 }
 
-function hoverOver(buttonX,buttonY,buttonW,buttonH){
-  if(mouseX>buttonX-buttonW/2 && mouseX<buttonX+buttonW/2 && mouseY>buttonY-buttonH/8 && mouseY<buttonY+buttonH/2){
+function hoverOver(buttonX,buttonY,buttonW,buttonH,type){
+  if(type=="word" && mouseX>buttonX-buttonW/2 && mouseX<buttonX+buttonW/2 && mouseY>buttonY-buttonH/8 && mouseY<buttonY+buttonH/2){
+    console.log("hover");
+    return true;
+  }else if(type=="text box" && mouseX>buttonX-buttonW/2 && mouseX<buttonX+buttonW/2 && mouseY>buttonY-buttonH/2 && mouseY<buttonY+buttonH/2){
+    
     return true;
   }else{
     return false;
   }
 }
 
-function optionSelect(optionsX,optionsY,options,optionsText){
-  fill(255);
-  stroke(0);
-  //rect(optionsX,optionsY,w/2,100)
+
+
+
+function optionSelect(optionsX,optionsY,optionsText,questionNum,multipleSelect){
+  let options = answers[pageNum][questionNum][0];
+  let hover = answers[pageNum][questionNum][1];
+  textSize(30);
+  stroke(255);
+  //console.log(hover);
+
   for(let i=0; i<options.length;i++){
-    fill(255*answers[0][0][i],0,0);
+    
+    // if(hover[i] == 1){
+    //   fill(255,0,0);
+    // }else{
+    //   fill(0);
+    // }
+    if(hover[i] && !options[i]){
+      fill(200,0,0);
+      //stroke(0,0,0);
+      // strokeWeight(2);
+      // line(optionsX+(i-(optionsText.length-1)/2)*(w/2)/optionsText.length-textWidth(optionsText[i])/2,optionsY+22,optionsX+(i-(optionsText.length-1)/2)*(w/2)/optionsText.length+textWidth(optionsText[i])/2,optionsY+22)
+      // //rect(optionsX+(i-(optionsText.length-1)/2)*(w/2)/optionsText.length,optionsY,100,100)
+      // strokeWeight(1);
+    }else{
+      fill(255*int(options[i]),0,0);
+    }
+
+    stroke(255);
+    //fill(0);
     text(optionsText[i],optionsX+(i-(optionsText.length-1)/2)*(w/2)/optionsText.length,optionsY);
+
     let buttonX = optionsX+(i-(optionsText.length-1)/2)*(w/2)/optionsText.length;
     let buttonW = textWidth(optionsText[i])+10;
-    let buttonH = textWidth(optionsText[i])*heightScale;
-    if(hoverOver(buttonX,optionsY,buttonW,buttonH)){
-      console.log(optionsText[i]);
-      if(mouseIsPressed){
-        options[i] = 1;
-        for(let j=0; j<options.length; j++){
-          if(j != i){
-            options[j] = 0;
+    let buttonH = textWidth("O")*heightScale;
+    if(hoverOver(buttonX,optionsY,buttonW,buttonH,"word")){
+      hover[i] = 1;
+      if(mouseIsPressed && first){
+        //console.log(first);
+        if(multipleSelect){
+          options[i] = !options[i];
+
+        }else{
+          options[i] = 1;
+          for(let j=0; j<options.length; j++){
+            if(j != i){
+              options[j] = false;
+            }
           }
         }
-      }
+      }  
+    }else{
+      hover[i] = 0;
     }
   }
 
@@ -414,8 +543,9 @@ function optionSelect(optionsX,optionsY,options,optionsText){
 
 
 
-function inputTextBox(boxX,boxY,boxW,boxH,words,selected){
-  
+function inputTextBox(boxX,boxY,boxW,boxH,questionNum){
+  let words = answers[pageNum][questionNum][0];
+  let selected = answers[pageNum][questionNum][1];
   
   fill(255);
   stroke(0);
@@ -436,22 +566,23 @@ function inputTextBox(boxX,boxY,boxW,boxH,words,selected){
   }
   textAlign(CENTER,CENTER);
 
-  if(hoverOver(boxX,boxY,boxW,boxH) && mouseIsPressed){
-    return true;
-  }else if(!hoverOver(boxX,boxY,boxW,boxH) && mouseIsPressed){
-    return false;
+  if(hoverOver(boxX,boxY,boxW,boxH,"text box") && mouseIsPressed){
+    questionNumGlobal = questionNum;
+    console.log("click");
+    answers[pageNum][questionNum][1] = true;
+    //return true;
+  }else if(!hoverOver(boxX,boxY,boxW,boxH,"text box") && mouseIsPressed){
+    answers[pageNum][questionNum][1] = false;
   }else if(selected){
     drawCursor(boxX,boxY,boxW,boxH,words,boxTextSize,boxLineHeight);
   }
-  console.log(selected);
-  return selected;
 }
 
 function drawCursor(boxX,boxY,boxW,boxH,words,boxTextSize,boxLineHeight){
   textSize(boxTextSize);
   fill(0);
   stroke(0);
-  //strokeWeight(1);
+  strokeWeight(2);
 
   let lineHeight = textWidth("O")*1.75
   let cursorX = boxX-boxW/2+textWidth(words[words.length-1])+1;
@@ -461,7 +592,7 @@ function drawCursor(boxX,boxY,boxW,boxH,words,boxTextSize,boxLineHeight){
     line(cursorX,cursorY,cursorX,cursorY+boxLineHeight);
   }
   
-  //strokeWeight(1);
+  strokeWeight(1);
 }
 
 function homeScreenHover(){
@@ -518,10 +649,7 @@ function repaint() {
 
 }
 
-function saveAnswer(msg){
-  //myWriter.print(msg);
-  console.log(msg);
-}
+
 
 // Save the file when the user double-clicks.
 function doubleClicked() {
@@ -562,35 +690,47 @@ function mouseReleased(){
 
 
 function keyPressed(){
-  if(questionNum == 1){
-    let line = answers[0][1][0][answers[0][1][0].length-1];
-    if(answers[0][1][1] && key.length==1){
-      answers[0][1][0][answers[0][1][0].length-1] = line + key;
-    }else if(key=="Backspace"){
-      if(line == "" && answers[0][1][0].length>1){
-        answers[0][1][0].pop();
-      }else{
-        answers[0][1][0][answers[0][1][0].length-1] = line.substring(0,line.length-1);
-      }
-      
-    }else if(key=="Enter"){
-      newLine(line,answers[0][1][0],0);
-    }
-  }else if(questionNum == 2){
-    let line = answers[1][0][0][answers[1][0][0].length-1];
-    if(answers[1][0][1] && key.length==1){
-      answers[1][0][0][answers[1][0][0].length-1] = line + key;
-    }else if(key=="Backspace"){
-      if(line == "" && answers[1][0][0].length>1){
-        answers[1][0][0].pop();
-      }else{
-        answers[1][0][0][answers[1][0][0].length-1] = line.substring(0,line.length-1);
-      }
-      
-    }else if(key=="Enter"){
-      newLine(line,answers[1][0][0],0);
-    }
+  //if(pageNum == 1){
+  console.log(key);
+  let line;
+  console.log(answers)//[pageNum][questionNumGlobal][0]);
+  console.log(answers[pageNum][questionNumGlobal])//[0]);
+  if(answers[pageNum][questionNumGlobal][0].length>0){
+    line = answers[pageNum][questionNumGlobal][0][answers[pageNum][questionNumGlobal][0].length-1];
+  }else{
+    line = "";
   }
+  
+  console.log(line);
+  if(answers[pageNum][questionNumGlobal][1] && key.length==1){
+    answers[pageNum][questionNumGlobal][0][answers[pageNum][questionNumGlobal][0].length-1] = line + key;
+  }else if(key=="Backspace"){
+    if(line == "" && answers[pageNum][questionNumGlobal][0].length>1){
+      answers[pageNum][questionNumGlobal][0].pop();
+    }else{
+      answers[pageNum][questionNumGlobal][0][answers[pageNum][questionNumGlobal][0].length-1] = line.substring(0,line.length-1);
+    }
+    
+  }else if(key=="Enter"){
+    newLine(line,answers[pageNum][questionNumGlobal][0],0);
+  }else if(key == "Tab"){
+    fullscreen(true);
+  }
+//   }else if(pageNum == 2){
+//     let line = answers[1][0][0][answers[1][0][0].length-1];
+//     if(answers[1][0][1] && key.length==1){
+//       answers[1][0][0][answers[1][0][0].length-1] = line + key;
+//     }else if(key=="Backspace"){
+//       if(line == "" && answers[1][0][0].length>1){
+//         answers[1][0][0].pop();
+//       }else{
+//         answers[1][0][0][answers[1][0][0].length-1] = line.substring(0,line.length-1);
+//       }
+      
+//     }else if(key=="Enter"){
+//       newLine(line,answers[1][0][0],0);
+//     }
+//   }
 
 }
 
